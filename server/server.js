@@ -5,11 +5,12 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { User, Topic, TopicProgress, StudySession, Task, MockTest } from "./models.js";
 import { signToken, requireAuth } from "./auth.js";
-
+import path from "path";
+import { fileURLToPath } from "url";
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json());
-
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ---------- date helpers (see models.js note: dates are plain YYYY-MM-DD strings) ----------
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const addDays = (str, n) => {
@@ -487,7 +488,13 @@ app.get("/api/analytics", requireAuth, async (req, res) => {
   });
 });
 
-app.use((req, res) => res.status(404).json({ message: "Not found" }));
+app.use("/api", (req, res) => res.status(404).json({ message: "Not found" }));
+
+const clientDist = path.join(__dirname, "../client/dist");
+app.use(express.static(clientDist));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientDist, "index.html"));
+});
 
 const PORT = process.env.PORT || 5000;
 mongoose
