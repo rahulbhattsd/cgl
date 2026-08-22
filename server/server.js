@@ -260,8 +260,10 @@ app.get("/api/calendar", requireAuth, async (req, res) => {
   for (const m of mocks) ensure(m.date).mocksCompleted += 1;
 
   const days = Object.values(byDate).map((d) => {
-    const m = d.totalStudyMinutes;
-    const level = m === 0 ? 0 : m <= 60 ? 1 : m <= 120 ? 2 : m <= 180 ? 3 : 4;
+    // Activity score blends study time with completed tasks/mocks so a day with
+    // only completed tasks (no logged study session) still shows green.
+    const score = d.totalStudyMinutes + d.tasksCompleted * 30 + d.mocksCompleted * 45;
+    const level = score === 0 ? 0 : score <= 60 ? 1 : score <= 120 ? 2 : score <= 180 ? 3 : 4;
     return { ...d, level };
   });
 
