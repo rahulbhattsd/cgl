@@ -218,8 +218,8 @@ app.get("/api/mocks", requireAuth, async (req, res) => {
 app.post("/api/mocks", requireAuth, async (req, res) => {
   try {
     const body = req.body;
-    if (!body.date || !body.type || body.totalMarks == null || body.score == null)
-      return res.status(400).json({ message: "Date, type, total marks and score are required" });
+    if (!body.date || !body.type || !body.tier || body.totalMarks == null || body.score == null)
+      return res.status(400).json({ message: "Date, type, tier, total marks and score are required" });
     if (body.type === "Sectional" && !body.subject)
       return res.status(400).json({ message: "Subject is required for a sectional mock" });
     const mock = await MockTest.create({ ...body, user: req.userId });
@@ -379,10 +379,11 @@ app.get("/api/analytics", requireAuth, async (req, res) => {
   ]);
 
   const byType = (type) => mocks.filter((m) => m.type === type).map((m) => ({ date: m.date, score: m.score, pct: safePct(m.score, m.totalMarks) }));
+  const byTier = (tier) => mocks.filter((m) => m.tier === tier).map((m) => ({ date: m.date, score: m.score, pct: safePct(m.score, m.totalMarks) }));
   const mockSeries = {
     fullMock: byType("Full Mock"),
-    tier1: byType("Tier 1"),
-    tier2: byType("Tier 2"),
+    tier1: byTier("Tier 1"),
+    tier2: byTier("Tier 2"),
     sectional: mocks.filter((m) => m.type === "Sectional").map((m) => ({ date: m.date, subject: m.subject, score: m.score, pct: safePct(m.score, m.totalMarks) })),
   };
 

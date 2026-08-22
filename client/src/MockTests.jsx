@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { mockApi } from "./api.js";
 
-const TYPES = ["Full Mock", "Tier 1", "Tier 2", "Sectional"];
+const TYPES = ["Full Mock", "Sectional"];
+const TIERS = ["Tier 1", "Tier 2"];
 const SUBJECTS = ["Mathematics", "English", "Reasoning", "General Awareness"];
-const EMPTY = { date: new Date().toISOString().slice(0, 10), type: "Full Mock", subject: "", name: "", totalMarks: "", score: "", attempted: "", correct: "", wrong: "", unattempted: "", timeTaken: "", notes: "" };
+const EMPTY = { date: new Date().toISOString().slice(0, 10), type: "Full Mock", tier: "Tier 1", subject: "", name: "", totalMarks: "", score: "", attempted: "", correct: "", wrong: "", unattempted: "", timeTaken: "", notes: "" };
 
 export default function MockTests() {
   const [mocks, setMocks] = useState([]);
@@ -44,11 +45,11 @@ export default function MockTests() {
         {mocks.length === 0 ? <div className="empty-state">No mock tests recorded yet.</div> : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Date</th><th>Type</th><th>Subject</th><th>Score</th><th>Accuracy</th><th>Time</th><th></th></tr></thead>
+              <thead><tr><th>Date</th><th>Type</th><th>Tier</th><th>Subject</th><th>Score</th><th>Accuracy</th><th>Time</th><th></th></tr></thead>
               <tbody>
                 {mocks.map((m) => (
                   <tr key={m._id}>
-                    <td>{m.date}</td><td>{m.type}</td><td>{m.subject || "—"}</td>
+                    <td>{m.date}</td><td>{m.type}</td><td>{m.tier}</td><td>{m.subject || "—"}</td>
                     <td>{m.score}/{m.totalMarks} ({pct(m)}%)</td>
                     <td>{acc(m)}%</td><td>{m.timeTaken}m</td>
                     <td><button className="icon-btn" onClick={() => remove(m._id)}><Trash2 size={15} color="var(--danger)" /></button></td>
@@ -66,12 +67,12 @@ export default function MockTests() {
           <div className="field"><label>Date</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
           <div className="field"><label>Type</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, subject: e.target.value === "Sectional" ? form.subject : "" })}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></div>
         </div>
-        {form.type === "Sectional" && (
-          <div className="field"><label>Subject</label><select required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}><option value="">Select</option>{SUBJECTS.map((s) => <option key={s}>{s}</option>)}</select></div>
-        )}
-        {form.type !== "Full Mock" && form.type !== "Sectional" && (
-          <div className="field"><label>Subject (optional)</label><select value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}><option value="">None</option>{SUBJECTS.map((s) => <option key={s}>{s}</option>)}</select></div>
-        )}
+        <div className="field-row">
+          <div className="field"><label>Tier</label><select required value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value })}>{TIERS.map((t) => <option key={t}>{t}</option>)}</select></div>
+          {form.type === "Sectional" && (
+            <div className="field"><label>Subject</label><select required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}><option value="">Select</option>{SUBJECTS.map((s) => <option key={s}>{s}</option>)}</select></div>
+          )}
+        </div>
         <div className="field"><label>Mock Name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div className="field-row">
           <div className="field"><label>Total Marks</label><input type="number" required value={form.totalMarks} onChange={(e) => setForm({ ...form, totalMarks: e.target.value })} /></div>
