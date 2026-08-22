@@ -147,6 +147,17 @@ td { padding: 10px; border-bottom: 1px solid var(--border); }
 .error-msg { background: #2a1512; border: 1px solid var(--danger); color: #ffb3a3; padding: 9px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
 
 .heatmap-wrap { overflow-x: auto; }
+.months-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.month-card { background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+.month-title { font-size: 11px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.month-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+.month-dow { font-size: 9px; text-align: center; color: var(--text-secondary); }
+.month-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.month-day-cell { aspect-ratio: 1; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; color: var(--text-secondary); }
+.month-day-cell.heat-3, .month-day-cell.heat-4 { color: #06170d; font-weight: 700; }
+.month-day-empty { visibility: hidden; cursor: default; }
+@media (max-width: 960px) { .months-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .months-grid { grid-template-columns: 1fr 1fr; } .month-day-cell { font-size: 8px; } }
 .heatmap-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; padding: 4px 0; }
 .heatmap-cell { width: 12px; height: 12px; border-radius: 3px; background: var(--surface-secondary); cursor: pointer; }
 .heat-0 { background: var(--surface-secondary); }
