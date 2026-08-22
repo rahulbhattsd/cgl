@@ -71,7 +71,8 @@ const MockTestSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     date: { type: String, required: true }, // YYYY-MM-DD
-    type: { type: String, enum: ["Full Mock", "Tier 1", "Tier 2", "Sectional"], required: true },
+    type: { type: String, enum: ["Full Mock", "Sectional"], required: true },
+    tier: { type: String, enum: ["Tier 1", "Tier 2"], required: true },
     subject: { type: String, default: "" }, // required only for Sectional (validated in route)
     name: { type: String, default: "" },
     totalMarks: { type: Number, required: true, min: 0 },
