@@ -171,13 +171,25 @@ app.delete("/api/study-sessions/:id", requireAuth, async (req, res) => {
 
 // ================= TASKS =================
 app.get("/api/tasks", requireAuth, async (req, res) => {
-  const { date, completed, priority, q } = req.query;
+  const { date, completed, priority, q, view } = req.query;
   const filter = { user: req.userId };
-  if (date) filter.date = date;
-  if (completed !== undefined) filter.completed = completed === "true";
+  const today = todayStr();
+
+  if (view === "today") {
+    filter.date = today;
+  } else if (view === "backlog") {
+    filter.date = { $lt: today };
+    filter.completed = false;
+  } else {
+    if (date) filter.date = date;
+    if (completed !== undefined) filter.completed = completed === "true";
+  }
   if (priority) filter.priority = priority;
   if (q) filter.title = new RegExp(q, "i");
-  const tasks = await Task.find(filter).sort({ date: 1, priority: -1 });
+
+  const tasks = await Task.find(filter);
+  const RANK = { High: 3, Medium: 2, Low: 1 };
+  tasks.sort((a, b) => (RANK[b.priority] - RANK[a.priority]) || a.date.localeCompare(b.date));
   res.json({ tasks });
 });
 
