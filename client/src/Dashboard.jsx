@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { dashboardApi } from "./api.js";
+import { useMode } from "./ModeContext.jsx";
+import { SapDashboard } from "./SapPages.jsx";
 
 const minutesToLabel = (m) => `${Math.floor(m / 60)}h ${m % 60}m`;
 
 export default function Dashboard() {
+  const { mode } = useMode();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
 
-  useEffect(() => { dashboardApi.get().then(setData).catch(() => setErr("Could not load dashboard data")); }, []);
+  useEffect(() => { if (mode === "cgl") dashboardApi.get().then(setData).catch(() => setErr("Could not load dashboard data")); }, [mode]);
+
+  if (mode === "sap") return <SapDashboard />;
 
   if (err) return <div className="empty-state">{err}</div>;
   if (!data) return <div className="loading">Loading dashboard...</div>;

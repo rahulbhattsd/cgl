@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { studyApi } from "./api.js";
 import { useMode } from "./ModeContext.jsx";
 import { useSapData } from "./SapPages.jsx";
+import { SAP_SECTIONS } from "./modeConfig.js";
 
 const SUBJECTS = ["Mathematics", "English", "Reasoning", "General Awareness"];
 const EMPTY = { date: new Date().toISOString().slice(0, 10), subject: SUBJECTS[0], topic: "", duration: "", questionsAttempted: "", questionsCorrect: "", notes: "" };
@@ -17,7 +18,7 @@ export default function StudyTracker() {
   const [q, setQ] = useState("");
 
   const load = () => studyApi.list({ subject: subjectFilter || undefined, q: q || undefined }).then(setSessions);
-  useEffect(() => { load(); }, [subjectFilter, q]);
+  useEffect(() => { if (mode === "cgl") load(); }, [subjectFilter, q, mode]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -109,9 +110,15 @@ export default function StudyTracker() {
 }
 
 function SapStudyTracker({data,save,label}) {
-  const [form,setForm]=useState({date:todayStr(),topic:"",duration:"",notes:""});
-  const sessions=data.studySessions;
-  const submit=(e)=>{e.preventDefault();save({...data,studySessions:[{...form,minutes:Number(form.duration),date:form.date,id:crypto.randomUUID()},...sessions]});setForm({date:todayStr(),topic:"",duration:"",notes:""});};
+  const { studySessions: sessions } = data;
+  const [form,setForm]=useState({date:todayStr(),section:"Fundamentals",topic:"",duration:"",confidence:"",notes:""});
+  const emptyForm=()=>({date:todayStr(),section:"Fundamentals",topic:"",duration:"",confidence:"",notes:""});
+  const submit=(e)=>{e.preventDefault();save({...data,studySessions:[{...form,minutes:Number(form.duration),date:form.date,id:globalThis.crypto?.randomUUID?.()||String(Date.now())},...sessions]});setForm(emptyForm());};
   const remove=(id)=>save({...data,studySessions:sessions.filter(x=>x.id!==id)});
-  return <div className="grid two-col"><form className="card" onSubmit={submit}><h3>Log a SAP study session</h3><div className="field"><label>Date</label><input type="date" required value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div><div className="field"><label>Topic</label><input required value={form.topic} onChange={e=>setForm({...form,topic:e.target.value})}/></div><div className="field"><label>Duration (minutes)</label><input type="number" required min="1" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})}/></div><div className="field"><label>Notes</label><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></div><button className="btn btn-primary">Save session</button></form><section className="card"><h3>SAP session history</h3>{sessions.length===0?<div className="empty-state">No SAP sessions logged yet.</div>:sessions.map(s=><div className="row sap-session" key={s.id}><div><strong>{s.topic}</strong><div className="muted">{s.date} · {label(s.minutes)}</div>{s.notes&&<div className="muted">{s.notes}</div>}</div><button className="btn btn-sm" onClick={()=>remove(s.id)} aria-label={`Delete ${s.topic} session`}>Delete</button></div>)}</section></div>;
+  const totalFor=(from)=>sessions.filter(s=>s.date>=from).reduce((n,s)=>n+(Number(s.minutes)||0),0);
+  const weekStart=new Date();weekStart.setDate(weekStart.getDate()-6);
+  const monthStart=new Date();monthStart.setDate(monthStart.getDate()-29);
+  const totals=[ ["Today",totalFor(todayStr())], ["This Week",totalFor(weekStart.toISOString().slice(0,10))], ["This Month",totalFor(monthStart.toISOString().slice(0,10))], ["All Time",sessions.reduce((n,s)=>n+(Number(s.minutes)||0),0)] ];
+  const filtered=sessions.filter(s=>(!subjectFilter||s.section===subjectFilter)&&`${s.topic} ${s.notes}`.toLowerCase().includes(q.toLowerCase()));
+  return <div className="stack" style={{gap:18}}><div className="grid kpi-grid">{totals.map(([labelText,minutes],i)=><div className="card kpi-card" key={labelText}><div className="kpi-label">{labelText}</div><div className={`kpi-value ${i===3?"accent":""}`}>{label(minutes)}</div></div>)}</div><div className="grid two-col" style={{alignItems:"start"}}><form className="card" onSubmit={submit}><h3>Log a SAP study session</h3><div className="field-row"><div className="field"><label>Date</label><input type="date" required value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div><div className="field"><label>Section</label><select value={form.section} onChange={e=>setForm({...form,section:e.target.value})}>{SAP_SECTIONS.map(s=><option key={s}>{s}</option>)}</select></div></div><div className="field"><label>Topic</label><input required value={form.topic} onChange={e=>setForm({...form,topic:e.target.value})}/></div><div className="field-row"><div className="field"><label>Duration (minutes)</label><input type="number" required min="1" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})}/></div><div className="field"><label>Confidence (1–5)</label><select value={form.confidence} onChange={e=>setForm({...form,confidence:e.target.value})}><option value="">Not rated</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></div></div><div className="field"><label>Notes</label><textarea rows="2" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></div><button className="btn btn-primary">Save session</button></form><section className="card"><h3>Session History</h3><div className="field-row" style={{marginBottom:12}}><input placeholder="Search topic/notes..." value={q} onChange={e=>setQ(e.target.value)}/><select value={subjectFilter} onChange={e=>setSubjectFilter(e.target.value)}><option value="">All sections</option>{SAP_SECTIONS.map(s=><option key={s}>{s}</option>)}</select></div>{filtered.length===0?<div className="empty-state">No sessions logged yet.</div>:<div className="table-wrap"><table><thead><tr><th>Date</th><th>Section</th><th>Topic</th><th>Duration</th><th>Confidence</th><th></th></tr></thead><tbody>{filtered.map(s=><tr key={s.id}><td>{s.date}</td><td>{s.section}</td><td>{s.topic||"—"}</td><td>{label(s.minutes)}</td><td>{s.confidence||"—"}</td><td><button className="icon-btn" onClick={()=>remove(s.id)} aria-label={`Delete ${s.topic} session`}><Trash2 size={15} color="var(--danger)"/></button></td></tr>)}</tbody></table></div>}</section></div></div>;
 }
