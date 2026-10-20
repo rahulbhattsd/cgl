@@ -78,6 +78,12 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; }
 }
 .topbar h1 { font-size: 18px; font-weight: 700; }
 .topbar .user-pill { font-size: 13px; color: var(--text-secondary); }
+.topbar-actions { display: flex; align-items: center; gap: 14px; }
+.mode-switch { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 10px; }
+.mode-switch button { background: transparent; border: 0; color: var(--text-secondary); cursor: pointer; padding: 6px 11px; border-radius: 7px; font-size: 11px; font-weight: 700; }
+.mode-switch button.selected { background: var(--accent); color: var(--background); }
+.mode-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[data-mode="sap"] { --accent: #56b4c2; --accent-dim: #214b53; --success: #56b4c2; }
 .content { padding: 24px 28px 64px; max-width: 1240px; }
 
 .mobile-toggle { display: none; }
@@ -185,6 +191,27 @@ td { padding: 10px; border-bottom: 1px solid var(--border); }
 .check-item input { width: auto; }
 
 .loading { padding: 40px; text-align: center; color: var(--text-secondary); }
+.sap-topic { border-bottom: 1px solid var(--border); padding: 12px 0; }
+.sap-topic .row { margin-bottom: 8px; align-items: start; }
+.sap-topic .row strong { font-size: 14px; line-height: 1.5; }
+.sap-topic select { max-width: 160px; }
+.phase-card { background: var(--surface-secondary); border-radius: 9px; padding: 14px; }
+.phase-card ul { padding-left: 18px; color: var(--text-secondary); font-size: 13px; }
+.sap-check { display: flex; align-items: flex-start; margin: 12px 0; }
+.sap-check span { flex: 1; line-height: 1.5; }
+.sap-check textarea { display: block; margin-top: 8px; }
+.resource-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.resource-row input { width: auto; }
+.resource-row a { color: var(--accent); }
+.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.sap-session { padding: 10px 0; border-bottom: 1px solid var(--border); align-items: start; }
+@media (max-width: 720px) {
+  .topbar { padding: 12px 16px; gap: 8px; }
+  .topbar-actions { gap: 8px; }
+  .topbar .user-pill { display: none; }
+  .sap-topic .row { flex-direction: column; }
+  .sap-topic select { max-width: none; }
+}
 
 @media (max-width: 960px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

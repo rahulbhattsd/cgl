@@ -13,6 +13,7 @@ A personal SSC CGL preparation, planning, consistency and analytics platform. Gi
 - Study session tracker with accuracy, totals (today/week/month/all-time)
 - Mock test system (Full/Tier 1/Tier 2/Sectional) with conditional fields
 - Analytics page: 5 required charts (Full Mock, Tier 1, Tier 2, Sectional, Subject-wise), accuracy, study-hour distribution, consistency score, weak areas, preparation health
+- SAP Prep mode with a separate SAP syllabus, phase planner, tracker, milestones, and T-code reference
 
 ## Tech Stack
 
@@ -89,6 +90,10 @@ All non-auth routes require `Authorization: Bearer <token>` and only ever touch 
 ## Date Handling
 
 All user-facing dates (study sessions, tasks, mocks) are stored as plain `YYYY-MM-DD` strings — never as timezone-aware timestamps — so streaks and daily aggregates never shift due to UTC conversion.
+
+## SAP Prep mode
+
+Use the CGL | SAP switch in the header to change preparation modes. The selection persists in `studedu_mode`; SAP study progress is kept separately in the `sap:*` localStorage namespace and can be exported/imported as JSON. SAP syllabus content lives in `client/src/sapSyllabus.json`: add a section with an `id`, `name`, `phase`, and `topics` array, then assign a distinct `id` to each section/topic position remains stable for saved progress. The existing CGL database records and API remain unchanged.
 
 ## Screenshots
 
