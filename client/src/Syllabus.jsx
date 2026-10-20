@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { syllabusApi } from "./api.js";
+import { useMode } from "./ModeContext.jsx";
+import { SapSyllabus } from "./SapPages.jsx";
 
 const STAGES = [
   ["lecture", "Lecture"], ["notes", "Notes"], ["practice", "Practice"],
@@ -9,12 +11,15 @@ const SUBJECTS = ["Mathematics", "English", "Reasoning", "General Awareness"];
 const FILTERS = ["All", "Revision Pending", "Revision 1 Done", "Revision 2 Done"];
 
 export default function Syllabus() {
+  const { mode } = useMode();
   const [data, setData] = useState(null);
   const [subject, setSubject] = useState(SUBJECTS[0]);
   const [filter, setFilter] = useState("All");
 
   const load = () => syllabusApi.get().then(setData);
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (mode === "cgl") load(); }, [mode]);
+
+  if (mode === "sap") return <SapSyllabus />;
 
   const toggle = async (topicId, stage) => {
     await syllabusApi.toggleStage(topicId, stage);

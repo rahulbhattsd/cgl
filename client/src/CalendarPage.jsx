@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import Heatmap from "./Heatmap.jsx";
 import { calendarApi, studyApi, taskApi } from "./api.js";
+import { useMode } from "./ModeContext.jsx";
+import { useSapData } from "./SapPages.jsx";
+import { SAP_SECTIONS } from "./modeConfig.js";
 
 const SUBJECTS = ["Mathematics", "English", "Reasoning", "General Awareness"];
 
 export default function CalendarPage() {
+  const { mode } = useMode();
+  const [sapData, saveSap] = useSapData();
   const [year, setYear] = useState(new Date().getFullYear());
   const [dataByDate, setDataByDate] = useState({});
   const [selected, setSelected] = useState(null);
@@ -17,7 +22,9 @@ export default function CalendarPage() {
     setDataByDate(map);
   });
 
-  useEffect(() => { load(); }, [year]);
+  useEffect(() => { if (mode === "cgl") load(); }, [year, mode]);
+
+  if (mode === "sap") return <SapCalendar year={year} setYear={setYear} data={sapData} save={saveSap} />;
 
   const openDay = (date) => {
     setSelected(date);
@@ -59,6 +66,20 @@ export default function CalendarPage() {
       )}
     </div>
   );
+}
+
+function SapCalendar({ year, setYear, data, save }) {
+  const [selected, setSelected] = useState(null);
+  const sessionsByDate = Object.groupBy ? Object.groupBy(data.studySessions, (s) => s.date) : data.studySessions.reduce((map, s) => ((map[s.date] ||= []).push(s), map), {});
+  const byDate = {};
+  Object.entries(sessionsByDate).forEach(([date, sessions]) => { const mins=sessions.reduce((n,s)=>n+(Number(s.minutes)||0),0); byDate[date]={totalStudyMinutes:mins,level:mins===0?0:mins<30?1:mins<60?2:mins<120?3:4}; });
+  data.tasks.forEach((task) => { if (!task.completed && task.date?.startsWith(`${year}-`)) byDate[task.date] ||= { totalStudyMinutes: 0, level: 0 }; });
+  if ("2026-11-02".startsWith(`${year}-`)) byDate["2026-11-02"] ||= { totalStudyMinutes: 0, level: 0, joining: true };
+  const daySessions=data.studySessions.filter((s)=>s.date===selected);
+  const dayTasks=data.tasks.filter((t)=>t.date===selected);
+  const addSession=(e)=>{e.preventDefault();const form=new FormData(e.currentTarget);save({...data,studySessions:[...data.studySessions,{id:globalThis.crypto?.randomUUID?.()||String(Date.now()),date:selected,section:String(form.get("section")),topic:String(form.get("topic")),minutes:Number(form.get("minutes")),confidence:"",notes:""}]});e.currentTarget.reset();};
+  const addTask=(e)=>{e.preventDefault();const title=new FormData(e.currentTarget).get("title");save({...data,tasks:[...data.tasks,{id:globalThis.crypto?.randomUUID?.()||String(Date.now()),title:String(title),date:selected,priority:"Medium",completed:false}]});e.currentTarget.reset();};
+  return <div className="stack" style={{gap:18}}><section className="card"><div className="row" style={{marginBottom:10}}><h3 style={{margin:0}}>Contribution Calendar</h3><div className="row calendar-year"><button className="btn btn-sm" onClick={()=>setYear(y=>y-1)} aria-label="Previous year">←</button><span className="year-label">{year}</span><button className="btn btn-sm" onClick={()=>setYear(y=>y+1)} aria-label="Next year">→</button></div></div><Heatmap year={year} dataByDate={byDate} onSelect={setSelected}/><p className="muted">SAP study sessions and tasks · Joining date: 2 Nov 2026</p></section>{selected&&<section className="card"><div className="row"><h3>{selected}</h3><button className="btn btn-sm" onClick={()=>setSelected(null)}>Close</button></div>{selected==="2026-11-02"&&<p className="accent-text">SAP joining date</p>}<h4>Study sessions</h4>{daySessions.length?daySessions.map(s=><div className="row sap-session" key={s.id}><span>{s.section} · {s.topic}</span><span className="muted">{s.minutes} min</span></div>):<div className="empty-state">No sessions logged.</div>}<form className="field-row sap-calendar-form" onSubmit={addSession}><input name="topic" required placeholder="Study topic"/><select name="section">{SAP_SECTIONS.map(s=><option key={s}>{s}</option>)}</select><input name="minutes" type="number" min="1" required placeholder="Minutes"/><button className="btn btn-primary">Add session</button></form><h4>Tasks</h4>{dayTasks.length?dayTasks.map(t=><label className="check-item" key={t.id}><input type="checkbox" checked={!!t.completed} onChange={()=>save({...data,tasks:data.tasks.map(x=>x.id===t.id?{...x,completed:!x.completed}:x)})}/>{t.title}</label>):<div className="empty-state">No tasks scheduled.</div>}<form className="row sap-calendar-form" onSubmit={addTask}><input name="title" required placeholder="New task title"/><button className="btn btn-primary">Add task</button></form></section>}</div>;
 }
 
 function DayDetail({ detail, onChange, date }) {

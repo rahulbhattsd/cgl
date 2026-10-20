@@ -3,13 +3,17 @@ import syllabus from "./sapSyllabusData.js";
 export const SAP_KEY = "sap:progress";
 export const SAP_STATUSES = ["Not started", "Learning", "Revised", "Mastered"];
 export function freshSapData() {
-  return { topics: {}, milestones: {}, resources: {}, studySessions: [], trainer: {}, planStart: new Date().toISOString().slice(0, 10) };
+  const milestones = Object.fromEntries(syllabus.milestones.map((_, index) => [`starter-${index}`, { done: false, notes: "" }]));
+  return { topics: {}, milestones, resources: {}, studySessions: [], trainer: {}, planStart: new Date().toISOString().slice(0, 10), tasks: [], labs: [], calendarEvents: [] };
+}
+export function migrateSapData(data = {}) {
+  return { ...freshSapData(), ...data, topics: data.topics || {}, milestones: data.milestones || {}, resources: data.resources || {}, studySessions: data.studySessions || [], trainer: data.trainer || {}, tasks: data.tasks || [], labs: data.labs || [], calendarEvents: data.calendarEvents || [] };
 }
 export function readSapData(storage = globalThis.localStorage) {
   try {
     const raw = storage?.getItem(SAP_KEY);
     const data = raw ? JSON.parse(raw) : freshSapData();
-    return { ...freshSapData(), ...data, topics: data.topics || {}, milestones: data.milestones || {}, resources: data.resources || {}, studySessions: data.studySessions || [], trainer: data.trainer || {} };
+    return migrateSapData(data);
   } catch { return freshSapData(); }
 }
 export function writeSapData(data, storage = globalThis.localStorage) { storage?.setItem(SAP_KEY, JSON.stringify(data)); }
@@ -19,7 +23,7 @@ export function importSapData(text) {
   const parsed = JSON.parse(text);
   const data = parsed.progress || parsed;
   if ((parsed.mode && parsed.mode !== "sap") || !data || typeof data !== "object" || Array.isArray(data)) throw new Error("This file is not a valid SAP progress export.");
-  return { ...freshSapData(), ...data };
+  return migrateSapData(data);
 }
 export function sapStats(data) {
   const topics = syllabus.sections.flatMap((s) => s.topics.map((t) => ({ ...t, section: s.name })));

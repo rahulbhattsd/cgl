@@ -93,7 +93,7 @@ All user-facing dates (study sessions, tasks, mocks) are stored as plain `YYYY-M
 
 ## SAP Prep mode
 
-Use the CGL | SAP switch in the header to change preparation modes. The selection persists in `studedu_mode`; SAP study progress is kept separately in the `sap:*` localStorage namespace and can be exported/imported as JSON. SAP syllabus content lives in `client/src/sapSyllabus.json`: add a section with an `id`, `name`, `phase`, and `topics` array, then assign a distinct `id` to each section/topic position remains stable for saved progress. The existing CGL database records and API remain unchanged.
+Use the CGL | SAP switch in the header to change preparation modes. The selection persists in `studedu_mode`; SAP study progress is kept separately in the `sap:*` localStorage namespace and can be exported/imported as JSON. SAP syllabus content lives in `client/src/sapSyllabus.json`: add a section with an `id`, `name`, `phase`, and `topics` array, then assign a distinct `id` to each section/topic position that remains stable for saved progress. Shared screens use `client/src/modeConfig.js` for per-mode labels, navigation and sections, while `[data-mode="sap"]` overrides the accent variables in `client/src/index.css`. A new preparation mode can follow the same pattern: add its config, syllabus/data adapter and theme variables, then reuse the shared screen structure. The existing CGL database records and API remain unchanged.
 
 ## Screenshots
 
