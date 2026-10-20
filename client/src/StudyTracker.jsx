@@ -49,7 +49,7 @@ export default function StudyTracker() {
 
   const label = (m) => `${Math.floor(m / 60)}h ${m % 60}m`;
 
-  if (mode === "sap") return <SapStudyTracker data={sapData} save={saveSap} label={label}/>;
+  if (mode === "sap") return <SapStudyTracker data={sapData} save={saveSap} label={label} subjectFilter={subjectFilter} setSubjectFilter={setSubjectFilter} q={q} setQ={setQ}/>;
 
   return (
     <div className="stack" style={{ gap: 18 }}>
@@ -109,7 +109,7 @@ export default function StudyTracker() {
   );
 }
 
-function SapStudyTracker({data,save,label}) {
+function SapStudyTracker({data,save,label,subjectFilter,setSubjectFilter,q,setQ}) {
   const { studySessions: sessions } = data;
   const [form,setForm]=useState({date:todayStr(),section:"Fundamentals",topic:"",duration:"",confidence:"",notes:""});
   const emptyForm=()=>({date:todayStr(),section:"Fundamentals",topic:"",duration:"",confidence:"",notes:""});
