@@ -7,6 +7,11 @@ import { SAP_SECTIONS } from "./modeConfig.js";
 
 const SUBJECTS = ["Mathematics", "English", "Reasoning", "General Awareness"];
 const PRIORITIES = ["Low", "Medium", "High"];
+const VIEWS = [
+  { key: "today", label: "Today" },
+  { key: "backlog", label: "Backlog" },
+  { key: "all", label: "All" },
+];
 const EMPTY = { title: "", description: "", date: new Date().toISOString().slice(0, 10), subject: "", topic: "", priority: "Medium", estimatedDuration: "" };
 
 export default function Tasks() {
@@ -17,11 +22,39 @@ export default function Tasks() {
   const [editingId, setEditingId] = useState(null);
   const [q, setQ] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [view, setView] = useState("today");
 
-  const load = () => taskApi.list({ q: q || undefined, priority: priorityFilter || undefined }).then(setTasks);
-  useEffect(() => { if (mode === "cgl") load(); }, [q, priorityFilter, mode]);
 
-  if (mode === "sap") return <SapTasks data={sapData} save={saveSap} q={q} setQ={setQ} priorityFilter={priorityFilter} setPriorityFilter={setPriorityFilter} form={form} setForm={setForm} editingId={editingId} setEditingId={setEditingId} />;
+  const load = () =>
+    taskApi
+      .list({
+        view,
+        q: q || undefined,
+        priority: priorityFilter || undefined,
+      })
+      .then(setTasks);
+
+  useEffect(() => {
+    if (mode === "cgl") load();
+  }, [view, q, priorityFilter, mode]);
+
+  if (mode === "sap") {
+    return (
+      <SapTasks
+        data={sapData}
+        save={saveSap}
+        q={q}
+        setQ={setQ}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        form={form}
+        setForm={setForm}
+        editingId={editingId}
+        setEditingId={setEditingId}
+      />
+    );
+  }
+
 
   const submit = async (e) => {
     e.preventDefault();
@@ -36,10 +69,18 @@ export default function Tasks() {
   const toggleComplete = async (t) => { await taskApi.update(t._id, { completed: !t.completed }); load(); };
   const remove = async (id) => { await taskApi.remove(id); load(); };
 
+  const listTitle = view === "today" ? "Today's Tasks" : view === "backlog" ? "Backlog (Overdue)" : "All Tasks";
+  const emptyMessage = view === "today" ? "Nothing scheduled for today." : view === "backlog" ? "No backlog — you're all caught up!" : "No tasks yet. Add your first one.";
+
   return (
     <div className="grid two-col" style={{ alignItems: "start" }}>
       <div className="card">
-        <h3>All Tasks</h3>
+        <h3>{listTitle}</h3>
+        <div className="chip-row">
+          {VIEWS.map((v) => (
+            <button key={v.key} className={`chip ${view === v.key ? "active" : ""}`} onClick={() => setView(v.key)}>{v.label}</button>
+          ))}
+        </div>
         <div className="field-row" style={{ marginBottom: 14 }}>
           <input placeholder="Search tasks..." value={q} onChange={(e) => setQ(e.target.value)} />
           <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
@@ -47,7 +88,7 @@ export default function Tasks() {
             {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
           </select>
         </div>
-        {tasks.length === 0 ? <div className="empty-state">No tasks yet. Add your first one.</div> : (
+        {tasks.length === 0 ? <div className="empty-state">{emptyMessage}</div> : (
           <div className="stack">
             {tasks.map((t) => (
               <div key={t._id} className="row" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
