@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { freshSapData, readSapData, writeSapData, updateTopic, exportSapData, importSapData, sapStats, SAP_KEY, syllabus } from "./sapStore.js";
+import { freshSapData, readSapData, writeSapData, updateTopic, exportSapData, importSapData, sapStats, syllabusProgress, SAP_KEY, syllabus } from "./sapStore.js";
 
 function memoryStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -30,12 +30,54 @@ test("SAP backup round-trip preserves milestones and rejects CGL export", () => 
 });
 
 test("SAP syllabus preserves phases, practice and master-only completion", () => {
-  assert.equal(syllabus.sections.length, 22);
+  assert.equal(syllabus.sections.length, 25);
+  assert.equal(syllabus.sections.reduce((n, section) => n + section.topics.length, 0), 436);
   const data = freshSapData();
-  data.topics["G-0"] = { status: "Learning" };
+  const topicId = syllabus.sections[6].topics[0].id;
+  data.topics[topicId] = { status: "Learning" };
   assert.equal(sapStats(data).overall, 0);
-  data.topics["G-0"].status = "Mastered";
+  data.topics[topicId].status = "Mastered";
   assert.equal(sapStats(data).overall, Math.round(100 / sapStats(data).topics.length));
   assert.equal(syllabus.milestones.length, 3);
-  assert.equal(syllabus.phases.length, 4);
+  assert.equal(syllabus.phaseGroups.length, 6);
+});
+
+test("topic checks are independent and revision statistics use the full syllabus", () => {
+  const data = freshSapData();
+  const topicId = syllabus.sections[0].topics[0].id;
+  data.topics[topicId] = { checks: { study: true, r1: true, r2: false, r3: false } };
+  const stats = syllabusProgress(data);
+  assert.equal(stats.count, 436);
+  assert.equal(stats.studied, 1);
+  assert.equal(stats.revisions, 1);
+  assert.equal(stats.stageCounts.r1, 1);
+  assert.equal(stats.stageCounts.r2, 0);
+  assert.equal(stats.stageCounts.r3, 0);
+  assert.equal(stats.studyPct, Math.round(100 / 436));
+  assert.equal(stats.revisionPct, Math.round(100 / (436 * 3)));
+});
+
+test("each topic checkbox persists independently through the SAP storage adapter", () => {
+  const storage = memoryStorage();
+  let data = readSapData(storage);
+  const topicId = syllabus.sections[0].topics[0].id;
+  for (const check of ["study", "r1", "r2", "r3"]) {
+    data = updateTopic(data, topicId, { checks: { ...(data.topics[topicId]?.checks || {}), [check]: true } });
+  }
+  writeSapData(data, storage);
+  const restored = readSapData(storage);
+  assert.deepEqual(restored.topics[topicId].checks, { study: true, r1: true, r2: true, r3: true });
+});
+
+test("unambiguous legacy SAP statuses migrate to checklist ticks without removing old records", () => {
+  const legacyId = "J-0";
+  const targetId = "section-11-topic-01";
+  const storage = memoryStorage({ [SAP_KEY]: JSON.stringify({ topics: { [legacyId]: { status: "Mastered", notes: "saved" } } }) });
+  const data = readSapData(storage);
+  assert.deepEqual(data.topics[targetId].checks, { study: true, r1: false, r2: false, r3: false });
+  assert.equal(data.topics[targetId].notes, "saved");
+  assert.equal(data.topics[legacyId].status, "Mastered");
+  const learning = readSapData(memoryStorage({ [SAP_KEY]: JSON.stringify({ topics: { "C-0": { status: "Learning" } } }) }));
+  assert.deepEqual(learning.topics["section-03-topic-01"].checks, { study: false, r1: false, r2: false, r3: false });
+  assert.equal(learning.topics["section-03-topic-01"].legacyStatus, "Learning");
 });

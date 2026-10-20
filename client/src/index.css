@@ -226,6 +226,45 @@ td { padding: 10px; border-bottom: 1px solid var(--border); }
 .year-label { font-family:var(--font-mono); padding:5px 8px; }
 .accent-text { color:var(--accent); }
 .sap-syllabus-controls { margin-top:14px; }
+.sap-syllabus-page { gap: 16px; }
+.sap-syllabus-summary { position: sticky; top: 68px; z-index: 4; }
+.sap-syllabus-title { align-items: center; margin-bottom: 14px; }
+.sap-syllabus-title h2 { font-size: 22px; }
+.sap-eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .1em; font-size: 10px; font-weight: 800; margin: 0 0 4px; }
+.sap-progress-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.sap-progress-metrics > div { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.sap-progress-metrics strong { font: 700 19px var(--font-mono); color: var(--accent); }
+.sap-progress-metrics small { color: var(--text-secondary); font-size: 11px; }
+.sap-total-progress { margin-top: 12px; }
+.sap-syllabus-controls { grid-template-columns: minmax(180px,1fr) minmax(155px,220px) auto; align-items:center; }
+.sap-phase-list { display:flex; flex-direction:column; gap:14px; }
+.sap-phase-card { padding:16px 18px; }
+.sap-phase-heading { display:flex; justify-content:space-between; gap:16px; align-items:start; }
+.sap-phase-heading h3 { color:var(--text-primary); text-transform:none; letter-spacing:0; font-size:16px; margin:0; }
+.sap-phase-numbers { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+.sap-phase-numbers span { color:var(--text-secondary); border:1px solid var(--border); background:var(--surface-secondary); border-radius:999px; padding:4px 8px; font-size:10px; white-space:nowrap; }
+.sap-phase-progress { margin:12px 0; height:5px; }
+.sap-section-list { display:flex; flex-direction:column; gap:7px; }
+.sap-outline-section { border:1px solid var(--border); border-radius:9px; overflow:hidden; background:color-mix(in srgb, var(--surface-secondary) 45%, transparent); }
+.sap-outline-section .syllabus-section-toggle { min-height:48px; padding:10px 12px; }
+.sap-outline-section .syllabus-section-toggle > span:first-child { min-width:0; }
+.sap-outline-section .syllabus-section-toggle strong { font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
+.sap-section-meta { display:block; color:var(--text-secondary); font-size:10px; margin-top:3px; }
+.sap-section-expand { flex-shrink:0; color:var(--text-secondary); font-size:11px; }
+.sap-syllabus-topics { padding:0 12px 4px; }
+.sap-checklist-topic { display:grid; grid-template-columns:minmax(180px,1fr) auto minmax(175px, auto); gap:14px; align-items:center; padding:10px 6px; border-top:1px solid var(--border); scroll-margin-top:180px; }
+.sap-checklist-topic.is-complete { background:color-mix(in srgb, var(--accent) 7%, transparent); }
+.sap-topic-name { min-width:0; }
+.sap-topic-name strong { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.sap-topic-name p { margin:3px 0 0; color:var(--text-secondary); font-size:11px; }
+.sap-topic-checks { display:flex; gap:10px; align-items:center; }
+.sap-revision-check { display:inline-flex; align-items:center; gap:4px; cursor:pointer; color:var(--text-secondary); font-size:11px; margin:0; white-space:nowrap; }
+.sap-revision-check input { width:15px; height:15px; margin:0; accent-color:var(--accent); cursor:pointer; }
+.sap-topic-state { color:var(--text-secondary); font-size:10px; text-align:right; }
+.is-complete .sap-topic-state { color:var(--success); font-weight:700; }
+.sap-filter-empty { padding:10px 4px; color:var(--text-secondary); font-size:12px; }
+.sap-syllabus-summary .btn:disabled { opacity:.7; cursor:default; }
+.sap-syllabus-page :is(button,input,select):focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
 .syllabus-section-toggle { width:100%; display:flex; justify-content:space-between; align-items:center; gap:12px; text-align:left; color:var(--text-primary); background:none; border:0; cursor:pointer; font:inherit; }
 .syllabus-section-toggle:focus-visible { outline:2px solid var(--focus-ring); outline-offset:3px; }
 .sap-syllabus-topics { margin-top:12px; }
@@ -241,6 +280,17 @@ td { padding: 10px; border-bottom: 1px solid var(--border); }
   .sap-calendar-form { grid-template-columns:1fr; }
   .task-actions { gap:4px; }
   .task-row { align-items:flex-start; }
+  .sap-syllabus-summary { position:static; }
+  .sap-syllabus-title { align-items:flex-start; flex-direction:column; }
+  .sap-progress-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .sap-syllabus-controls { grid-template-columns:1fr; }
+  .sap-phase-heading { flex-direction:column; }
+  .sap-phase-numbers { justify-content:flex-start; }
+  .sap-checklist-topic { grid-template-columns:1fr; gap:7px; }
+  .sap-topic-checks { flex-wrap:wrap; gap:12px; }
+  .sap-topic-state { text-align:left; }
+  .sap-outline-section .syllabus-section-toggle { align-items:flex-start; }
+  .sap-section-expand { padding-top:3px; }
 }
 
 @media (max-width: 960px) {

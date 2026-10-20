@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { readSapData, sapStats, SAP_STATUSES, syllabus, updateTopic, writeSapData } from "./sapStore.js";
+import { readSapData, sapStats, syllabusProgress, REVISION_STAGES, SAP_STATUSES, syllabus, updateTopic, writeSapData } from "./sapStore.js";
 
 export function useSapData() {
   const [data, setData] = useState(readSapData);
@@ -35,10 +35,78 @@ export function SapDashboard() {
 function Kpi({label,value}) { return <div className="card kpi-card"><div className="kpi-label">{label}</div><div className="kpi-value accent">{value}</div></div>; }
 
 export function SapSyllabus() {
-  const [data, save] = useSapData(); const [phase, setPhase] = useState("all"); const [search, setSearch] = useState(""); const [open, setOpen] = useState({}); const stats = sapStats(data);
-  const filtered = useMemo(()=>syllabus.sections.map(s=>({...s,topics:s.topics.map((name,i)=>({name,id:`${s.id}-${i}`,phase:s.phase,noteField:s.noteField,resource:s.resource})).filter(t=>(phase==="all"||String(t.phase)===phase)&&`${s.name} ${t.name}`.toLowerCase().includes(search.toLowerCase()))})).filter(s=>s.topics.length),[phase,search]);
-  return <div className="stack"><section className="card"><div className="row"><div><h3>SAP syllabus</h3><div className="kpi-value accent" style={{fontSize:22}}>{stats.overall}% Mastered</div></div><span className="muted">{stats.complete}/{stats.topics.length} topics</span></div><div className="progress-track"><div className="progress-fill" style={{width:`${stats.overall}%`}}/></div><div className="field-row sap-syllabus-controls"><input aria-label="Search SAP syllabus" placeholder="Search syllabus topics..." value={search} onChange={e=>setSearch(e.target.value)}/><select aria-label="Filter by phase" value={phase} onChange={e=>setPhase(e.target.value)}><option value="all">All phases</option>{syllabus.phases.map((p,i)=><option value={i+1} key={p}>{p}</option>)}</select></div></section>
-    {filtered.map(section=><section className="card" key={section.id}><button className="syllabus-section-toggle" aria-expanded={open[section.id]??true} onClick={()=>setOpen({...open,[section.id]:!(open[section.id]??true)})}><span><strong>{section.name}</strong> <span className="muted">Phase {section.phase}</span></span><span className="muted">{section.topics.length} topics · {open[section.id]===false?"Expand":"Collapse"}</span></button>{open[section.id]!==false&&<div className="stack sap-syllabus-topics">{section.topics.map(t=>{const value=data.topics[t.id]||{};const resourceUrl=value.resource||"";return <article className="sap-topic" key={t.id}><div className="row"><div><strong>{t.name}</strong>{t.noteField&&<span className="topic-hint">Bridge: {t.noteField}</span>}</div><select aria-label={`Status: ${t.name}`} value={value.status||SAP_STATUSES[0]} onChange={e=>save(updateTopic(data,t.id,{status:e.target.value}))}>{SAP_STATUSES.map(s=><option key={s}>{s}</option>)}</select></div><div className="field-row"><div><textarea aria-label={`Notes: ${t.name}`} placeholder={t.noteField?`Notes · ${t.noteField}`:"Notes"} rows="2" value={value.notes||""} onChange={e=>save(updateTopic(data,t.id,{notes:e.target.value}))}/>{t.noteField&&<span className="muted">Record {t.noteField} here for a personalized learning bridge.</span>}</div><div><input aria-label={`Resource link: ${t.name}`} type="url" placeholder="Optional resource link" value={resourceUrl} onChange={e=>save(updateTopic(data,t.id,{resource:e.target.value}))}/>{resourceUrl&&<a className="muted" href={resourceUrl} target="_blank" rel="noreferrer">Open topic resource</a>}</div></div></article>})}</div>}</section>)}
+  const [data, save] = useSapData();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [open, setOpen] = useState(() => Object.fromEntries(syllabus.sections.map((section) => [section.id, false])));
+  const stats = syllabusProgress(data);
+  const query = search.trim().toLocaleLowerCase();
+  const matches = (topic) => {
+    const state = data.topics[topic.id]?.checks || {};
+    const any = REVISION_STAGES.some(([key]) => state[key]);
+    const revisions = ["r1", "r2", "r3"].filter((key) => state[key]).length;
+    const isComplete = !!state.study && revisions === 3;
+    const byFilter = filter === "all" ||
+      (filter === "not-started" && !any) ||
+      (filter === "studying" && !state.study && any) ||
+      (filter === "studied" && !!state.study && revisions === 0) ||
+      (filter === "revision-pending" && !!state.study && revisions < 3) ||
+      (filter === "fully-revised" && isComplete);
+    return byFilter && (!query || `${topic.name} ${topic.description || ""}`.toLocaleLowerCase().includes(query));
+  };
+  const filtered = useMemo(() => stats.sections.map((section) => ({
+    ...section,
+    visibleTopics: section.topics.filter(matches),
+  })).filter((section) => section.visibleTopics.length), [stats, search, filter, data]);
+  const setAllOpen = (value) => setOpen(Object.fromEntries(syllabus.sections.map((section) => [section.id, value])));
+  const jumpToNext = () => {
+    if (!stats.next) return;
+    setOpen((current) => ({ ...current, [stats.next.section.id]: true }));
+    window.setTimeout(() => document.getElementById(stats.next.id)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  };
+  const toggle = (topic, key, checked) => {
+    const value = data.topics[topic.id] || {};
+    save(updateTopic(data, topic.id, { checks: { ...(value.checks || {}), [key]: checked } }));
+  };
+  const expandAll = Object.values(open).some((value) => !value);
+
+  return <div className="stack sap-syllabus-page">
+    <section className="card sap-syllabus-summary" aria-label="Syllabus progress">
+      <div className="row sap-syllabus-title"><div><p className="sap-eyebrow">SAP + ABAP learning tracker</p><h2>Syllabus</h2></div><button className="btn btn-primary" onClick={jumpToNext} disabled={!stats.next}>{stats.next ? "Continue Learning" : "All topics complete"}</button></div>
+      <div className="sap-progress-metrics">
+        <div><span className="muted">Topics studied</span><strong>{stats.studyPct}%</strong><small>{stats.studied} / {stats.count}</small></div>
+        <div><span className="muted">Revision progress</span><strong>{stats.revisionPct}%</strong><small>{stats.revisions} / {stats.count * 3} rounds</small></div>
+        <div><span className="muted">Fully revised</span><strong>{stats.fullyRevised}</strong><small>all four checks complete</small></div>
+        {REVISION_STAGES.slice(1).map(([key, label]) => <div key={key}><span className="muted">{label} complete</span><strong>{stats.stageCounts[key]} / {stats.count}</strong><small>{stats.count ? Math.round(stats.stageCounts[key] / stats.count * 100) : 0}% of topics</small></div>)}
+      </div>
+      <div className="progress-track sap-total-progress"><div className="progress-fill" style={{ width: `${stats.studyPct}%` }} /></div>
+      <div className="field-row sap-syllabus-controls"><input aria-label="Search SAP syllabus" placeholder="Search topics..." value={search} onChange={(event) => setSearch(event.target.value)} /><select aria-label="Filter topics" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All topics</option><option value="not-started">Not Started</option><option value="studying">Studying</option><option value="studied">Studied</option><option value="revision-pending">Revision Pending</option><option value="fully-revised">Fully Revised</option></select><button className="btn" onClick={() => setAllOpen(expandAll)}>{expandAll ? "Expand all sections" : "Collapse all sections"}</button></div>
+    </section>
+    <div className="sap-phase-list">{stats.phases.map((phase) => <section className="card sap-phase-card" key={phase.number}>
+      <div className="sap-phase-heading"><div><p className="sap-eyebrow">Phase {phase.number}</p><h3>{phase.title}</h3></div><div className="sap-phase-numbers"><span>{phase.sectionCount} sections</span><span>{phase.count} topics</span><span>{phase.studyPct}% studied</span><span>{phase.revisionPct}% revisions</span></div></div>
+      <div className="progress-track sap-phase-progress"><div className="progress-fill" style={{ width: `${phase.studyPct}%` }} /></div>
+      <div className="sap-section-list">{phase.sections.map((section) => {
+        const expanded = !!open[section.id];
+        const visible = filtered.find((item) => item.id === section.id)?.visibleTopics || [];
+        return <section className="sap-outline-section" key={section.id}>
+          <button className="syllabus-section-toggle" aria-expanded={expanded} aria-controls={`${section.id}-topics`} onClick={() => setOpen((current) => ({ ...current, [section.id]: !expanded }))}>
+            <span><strong>Section {section.number}: {section.name}</strong><span className="sap-section-meta">{section.studied}/{section.count} studied ({section.count ? Math.round(section.studied / section.count * 100) : 0}%) · {section.fullyRevised} fully revised</span></span><span className="sap-section-expand">{expanded ? "Collapse" : "Expand"} · {section.count} topics</span>
+          </button>
+          {expanded && <div className="sap-syllabus-topics" id={`${section.id}-topics`}>
+            {visible.length ? visible.map((topic) => {
+              const state = data.topics[topic.id]?.checks || {};
+              const complete = REVISION_STAGES.every(([key]) => state[key]);
+              return <article className={`sap-checklist-topic${complete ? " is-complete" : ""}`} id={topic.id} key={topic.id}>
+                <div className="sap-topic-name"><strong>{topic.name}</strong>{topic.description && <p>{topic.description}</p>}</div>
+                <div className="sap-topic-checks">{REVISION_STAGES.map(([key, label]) => <label className="sap-revision-check" key={key}><input type="checkbox" checked={!!state[key]} aria-label={`${label} complete: ${topic.name}`} onChange={(event) => toggle(topic, key, event.target.checked)} /><span>{label}</span></label>)}</div>
+                <span className="sap-topic-state" aria-live="polite">{complete ? "Complete" : state.study ? "Study complete · revisions pending" : data.topics[topic.id]?.legacyStatus === "Learning" ? "Previously marked Learning · study not checked" : "Not studied"}</span>
+              </article>;
+            }) : <p className="sap-filter-empty">No topics match this search or filter in this section.</p>}
+          </div>}
+        </section>;
+      })}</div>
+    </section>)}</div>
+    {filtered.length === 0 && <div className="card empty-state">No syllabus topics match your search or filter.</div>}
   </div>;
 }
 
